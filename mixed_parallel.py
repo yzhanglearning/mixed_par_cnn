@@ -148,7 +148,8 @@ def main():
 
     
         train_dataset = MRIDataset(train_img, train_target)
-        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.train_batch_size)
+        train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.train_batch_size, shuffle=(train_sampler is None), num_workers=1, pin_memory=True, sampler=train_sampler)
         valid_dataset = MRIDataset(valid_img, valid_target)
         valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.valid_batch_size)
 
@@ -195,12 +196,12 @@ def train(model, epoch, train_loader, valid_loader, optimizer, output_dir, devic
         output = model(batch_img)
         res = loss(output.squeeze(), batch_target)
         res.backward()
-        optimizer.step()
 
         
         avg_grad(model)
         print('Gradient averged for the rank of {}'.format(rank))
 
+        optimizer.step()
  #       target_true = []
 #        target_pred = []
 
